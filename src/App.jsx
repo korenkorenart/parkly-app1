@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import { fetchParkingSpots } from './lib/supabaseClient'
 import parkingData from './data/parkingData'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
@@ -13,6 +14,8 @@ import FavoritesPage from './pages/FavoritesPage'
 import ProfilePage from './pages/ProfilePage'
 import TermsPage from './pages/TermsPage'
 
+const hasSupabase = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY)
+
 export default function App() {
   const [favorites, setFavorites] = useState(() => {
     try {
@@ -21,6 +24,37 @@ export default function App() {
       return []
     }
   })
+  const [data, setData] = useState(parkingData)
+  const [supabaseConnected, setSupabaseConnected] = useState(false)
+
+  const userId = useMemo(() => {
+    let id = localStorage.getItem('parklyUserId')
+    if (!id) {
+      id = `demo-user-${Date.now()}`
+      localStorage.setItem('parklyUserId', id)
+    }
+    return id
+  }, [])
+
+  useEffect(() => {
+    if (!hasSupabase) return
+
+    let active = true
+    fetchParkingSpots()
+      .then((rows) => {
+        if (active && Array.isArray(rows) && rows.length > 0) {
+          setData(rows)
+          setSupabaseConnected(true)
+        }
+      })
+      .catch(() => {
+        setSupabaseConnected(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   const toggleFavorite = (id) => {
     setFavorites((prev) => {
@@ -31,14 +65,12 @@ export default function App() {
     })
   }
 
-  const data = useMemo(() => parkingData, [])
-
   return (
     <div className="app-root">
-      <Navbar />
+      <Navbar supabaseConnected={supabaseConnected} />
       <main className="container">
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<HomePage supabaseConnected={supabaseConnected} />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/dashboard" element={<DashboardPage data={data} favorites={favorites} onToggleFavorite={toggleFavorite} />} />
