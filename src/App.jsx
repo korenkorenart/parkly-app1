@@ -106,7 +106,7 @@ export default function App() {
           <Route path="/map" element={<MapPage data={data} />} />
           <Route path="/parking/:id" element={<ParkingDetailsPage data={data} onToggleFavorite={toggleFavorite} favorites={favorites} />} />
           <Route path="/favorites" element={<FavoritesPage data={data} favorites={favorites} onToggleFavorite={toggleFavorite} />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile" element={<ProfilePage data={data} favorites={favorites} />} />
           <Route path="/terms" element={<TermsPage />} />
         </Routes>
       </main>

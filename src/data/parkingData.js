@@ -5,7 +5,9 @@ const parkingData = [
     location: 'תל אביב, כיכר המושבה',
     price: 20,
     available: true,
-    description: 'חניה מקורה במרכז העיר, קרוב למסעדות ותחבורה ציבורית.'
+    description: 'חניה מקורה במרכז העיר, קרוב למסעדות ותחבורה ציבורית.',
+    lat: 32.0909,
+    lng: 34.7925
   },
   {
     id: '2',
@@ -13,7 +15,9 @@ const parkingData = [
     location: 'חיפה, שדרות העצמאות',
     price: 12,
     available: false,
-    description: 'חניה חיצונית, זולה ונגישה.'
+    description: 'חניה חיצונית, זולה ונגישה.',
+    lat: 32.8167,
+    lng: 34.9882
   },
   {
     id: '3',
@@ -21,7 +25,9 @@ const parkingData = [
     location: 'אשדוד, טיילת',
     price: 30,
     available: true,
-    description: 'מיקום עם נוף לים, מקומות מוגבלים.'
+    description: 'מיקום עם נוף לים, מקומות מוגבלים.',
+    lat: 31.8047,
+    lng: 34.6559
   },
   {
     id: '4',
@@ -29,7 +35,9 @@ const parkingData = [
     location: 'ירושלים, שכונת עין כרם',
     price: 8,
     available: true,
-    description: 'חניה בשכונה שקטה, אידיאלית לתושבים.'
+    description: 'חניה בשכונה שקטה, אידיאלית לתושבים.',
+    lat: 31.7683,
+    lng: 35.1630
   }
 ];
 

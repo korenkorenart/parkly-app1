@@ -1,18 +1,60 @@
-import React from 'react'
+﻿import React from 'react'
 
 export default function MapPage({ data = [] }) {
+  const points = data.filter((spot) => spot.lat && spot.lng)
+  const bbox = points.length
+    ? [
+        Math.min(...points.map((spot) => spot.lng)) - 0.15,
+        Math.min(...points.map((spot) => spot.lat)) - 0.15,
+        Math.max(...points.map((spot) => spot.lng)) + 0.15,
+        Math.max(...points.map((spot) => spot.lat)) + 0.15
+      ]
+    : [34.5, 31.6, 35.2, 32.9]
+
   return (
     <main className="container page-section">
       <section className="info-panel" aria-labelledby="map-title">
         <div>
           <p className="eyebrow">מפה חכמה</p>
           <h2 id="map-title">מפת חניות</h2>
-          <p>כל החניות שלך במקום אחד עם הצגה ברורה של מצב זמינות ומחיר.</p>
+          <p>כל החניות שלך במפה אחת עם נקודות מיקום, מצב וזמינות.</p>
         </div>
       </section>
-      <div className="map-placeholder" role="img" aria-label={`מפה עם ${data.length} חניות`}>
-        מפה כאן - סימוני חניה: {data.length}
-      </div>
+
+      <section className="map-shell">
+        <iframe
+          title="OpenStreetMap Parkly"
+          className="map-frame"
+          src={`https://www.openstreetmap.org/export/embed.html?bbox=${bbox.map((value) => value.toFixed(4)).join('%2C')}&layer=mapnik`}
+          loading="lazy"
+        />
+
+        <aside className="map-list" aria-label="רשימת חניות במפה">
+          <div className="map-list-header">
+            <h3>חניות ברשימה</h3>
+            <p>לחץ על כל קישור כדי לפתוח את המיקום ב־OpenStreetMap.</p>
+          </div>
+          <ul>
+            {points.map((spot) => (
+              <li key={spot.id}>
+                <div>
+                  <a
+                    href={`https://www.openstreetmap.org/?mlat=${spot.lat}&mlon=${spot.lng}#map=14/${spot.lat}/${spot.lng}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {spot.title}
+                  </a>
+                  <p className="detail-meta">{spot.location} · ₪{spot.price}</p>
+                </div>
+                <span className={spot.available ? 'badge available' : 'badge unavailable'}>
+                  {spot.available ? 'פנוי' : 'לא זמין'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      </section>
     </main>
   )
 }
