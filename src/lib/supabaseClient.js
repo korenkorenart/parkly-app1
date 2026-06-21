@@ -42,4 +42,24 @@ export async function removeFavorite(userId, parkingSpotId) {
   if (error) throw error
 }
 
+export async function fetchBookings(userId) {
+  if (!supabase) return []
+  const { data, error } = await supabase.from('bookings').select('*').eq('user_id', userId)
+  if (error) throw error
+  return data
+}
+
+export async function createBooking(userId, parkingSpotId) {
+  const client = ensureSupabase()
+  const start = new Date().toISOString()
+  const end = new Date(Date.now() + 1000 * 60 * 60).toISOString()
+  const { data, error } = await client
+    .from('bookings')
+    .insert([{ user_id: userId, parking_spot_id: parkingSpotId, starts_at: start, ends_at: end, status: 'confirmed' }])
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 export default supabase

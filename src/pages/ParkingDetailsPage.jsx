@@ -1,12 +1,25 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { createBooking } from '../lib/supabaseClient'
 
 export default function ParkingDetailsPage({ data = [], onToggleFavorite = () => {}, favorites = [] }) {
+  const [bookingStatus, setBookingStatus] = useState(null)
   const { id } = useParams()
   const spot = data.find((p) => p.id === id)
   if (!spot) return <div className="container">חניה לא נמצאה</div>
 
-  const handleBook = () => alert('ההזמנה בוצעה בהצלחה!')
+  const handleBook = async () => {
+    if (!spot.available) return
+
+    try {
+      const userId = localStorage.getItem('parklyUserId') || `demo-user-${Date.now()}`
+      await createBooking(userId, spot.id)
+      setBookingStatus('ההזמנה נקלטה בהצלחה!')
+    } catch (error) {
+      console.error('Booking failed:', error)
+      setBookingStatus('אירעה שגיאה בהזמנה, נסה שוב מאוחר יותר.')
+    }
+  }
 
   return (
     <main className="container page-section">
@@ -21,6 +34,7 @@ export default function ParkingDetailsPage({ data = [], onToggleFavorite = () =>
           <button className="btn secondary" onClick={() => onToggleFavorite(spot.id)}>{favorites.includes(spot.id) ? 'הוסר מהמועדפים' : 'שמור במועדפים'}</button>
           <button className="btn primary" onClick={handleBook} disabled={!spot.available}>{spot.available ? 'הזמן עכשיו' : 'לא זמין'}</button>
         </div>
+        {bookingStatus && <p className="page-description" style={{ marginTop: '14px' }}>{bookingStatus}</p>}
       </section>
     </main>
   )

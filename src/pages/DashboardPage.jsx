@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react'
 import FilterBar from '../components/FilterBar'
 import ParkingCard from '../components/ParkingCard'
 
-export default function DashboardPage({ data = [], favorites = [], onToggleFavorite }) {
+export default function DashboardPage({ data = [], favorites = [], onToggleFavorite, loading }) {
   const [filters, setFilters] = useState({ maxPrice: '', onlyAvailable: false, sort: 'none' })
 
   const filtered = useMemo(() => {
@@ -30,17 +30,26 @@ export default function DashboardPage({ data = [], favorites = [], onToggleFavor
 
       <FilterBar filters={filters} onChange={setFilters} />
 
-      <div className="grid">
-        {filtered.map((spot) => (
-          <ParkingCard key={spot.id} spot={spot} isFavorite={favorites.includes(spot.id)} onToggleFavorite={onToggleFavorite} onBook={handleBook} />
-        ))}
-      </div>
-
-      {filtered.length === 0 && (
+      {loading ? (
         <div className="empty-state">
-          <h2>אין חניות מתאימות כרגע</h2>
-          <p>נסה לשנות את הסינון או להסיר את המיון.</p>
+          <h2>טוען חניות...</h2>
+          <p>מביא את החניות מהשרת, זה לא אמור לקחת הרבה זמן.</p>
         </div>
+      ) : (
+        <>
+          <div className="grid">
+            {filtered.map((spot) => (
+              <ParkingCard key={spot.id} spot={spot} isFavorite={favorites.includes(spot.id)} onToggleFavorite={onToggleFavorite} onBook={handleBook} />
+            ))}
+          </div>
+
+          {filtered.length === 0 && (
+            <div className="empty-state">
+              <h2>אין חניות מתאימות כרגע</h2>
+              <p>נסה לשנות את הסינון או להסיר את המיון.</p>
+            </div>
+          )}
+        </>
       )}
     </section>
   )

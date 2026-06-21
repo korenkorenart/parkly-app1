@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Routes, Route } from 'react-router-dom'
-import { fetchParkingSpots } from './lib/supabaseClient'
+import { fetchParkingSpots, fetchFavorites, addFavorite, removeFavorite } from './lib/supabaseClient'
 import parkingData from './data/parkingData'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
@@ -26,6 +26,7 @@ export default function App() {
   })
   const [data, setData] = useState(parkingData)
   const [supabaseConnected, setSupabaseConnected] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const userId = useMemo(() => {
     let id = localStorage.getItem('parklyUserId')
@@ -40,6 +41,8 @@ export default function App() {
     if (!hasSupabase) return
 
     let active = true
+    setLoading(true)
+
     fetchParkingSpots()
       .then((rows) => {
         if (active && Array.isArray(rows) && rows.length > 0) {
@@ -50,19 +53,45 @@ export default function App() {
       .catch(() => {
         setSupabaseConnected(false)
       })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    fetchFavorites(userId)
+      .then((ids) => {
+        if (active) {
+          setFavorites(ids)
+          localStorage.setItem('favorites', JSON.stringify(ids))
+        }
+      })
+      .catch(() => {
+        /* fallback to local favorites */
+      })
 
     return () => {
       active = false
     }
-  }, [])
+  }, [userId])
 
-  const toggleFavorite = (id) => {
-    setFavorites((prev) => {
-      const exists = prev.includes(id)
-      const next = exists ? prev.filter((i) => i !== id) : [...prev, id]
-      localStorage.setItem('favorites', JSON.stringify(next))
-      return next
-    })
+  const toggleFavorite = async (id) => {
+    const exists = favorites.includes(id)
+    const next = exists ? favorites.filter((i) => i !== id) : [...favorites, id]
+    setFavorites(next)
+    localStorage.setItem('favorites', JSON.stringify(next))
+
+    if (!hasSupabase) return
+
+    try {
+      if (exists) {
+        await removeFavorite(userId, id)
+      } else {
+        await addFavorite(userId, id)
+      }
+    } catch (error) {
+      setFavorites(favorites)
+      localStorage.setItem('favorites', JSON.stringify(favorites))
+      console.error('שגיאת שמירת מועדפים:', error)
+    }
   }
 
   return (
@@ -73,7 +102,7 @@ export default function App() {
           <Route path="/" element={<HomePage supabaseConnected={supabaseConnected} />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/dashboard" element={<DashboardPage data={data} favorites={favorites} onToggleFavorite={toggleFavorite} />} />
+          <Route path="/dashboard" element={<DashboardPage data={data} favorites={favorites} onToggleFavorite={toggleFavorite} loading={loading} />} />
           <Route path="/map" element={<MapPage data={data} />} />
           <Route path="/parking/:id" element={<ParkingDetailsPage data={data} onToggleFavorite={toggleFavorite} favorites={favorites} />} />
           <Route path="/favorites" element={<FavoritesPage data={data} favorites={favorites} onToggleFavorite={toggleFavorite} />} />
