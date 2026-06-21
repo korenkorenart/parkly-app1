@@ -1,10 +1,21 @@
-import React from 'react'
+import React, { useState } from 'react'
 import ParkingCard from '../components/ParkingCard'
+import { createBooking } from '../lib/supabaseClient'
 
 export default function FavoritesPage({ data = [], favorites = [], onToggleFavorite }) {
+  const [bookingStatus, setBookingStatus] = useState(null)
   const favs = data.filter((p) => favorites.includes(p.id))
 
-  const handleBook = (id) => alert('ההזמנה בוצעה בהצלחה!')
+  const handleBook = async (id) => {
+    try {
+      const userId = localStorage.getItem('parklyUserId') || `demo-user-${Date.now()}`
+      await createBooking(userId, id)
+      setBookingStatus('ההזמנה נוצרה בהצלחה!')
+    } catch (error) {
+      console.error('Favorites booking failed:', error)
+      setBookingStatus('לא ניתן להזמין כרגע. נסה שוב מאוחר יותר.')
+    }
+  }
 
   return (
     <main className="container page-section">
@@ -15,6 +26,12 @@ export default function FavoritesPage({ data = [], favorites = [], onToggleFavor
           <p className="page-description">מציג את כל החניות שסימנת לשמירה. שמור והזמן חניה במהירות.</p>
         </div>
       </section>
+
+      {bookingStatus && (
+        <div className="empty-state" style={{ borderColor: 'rgba(34, 197, 94, 0.2)', background: 'rgba(34, 197, 94, 0.08)' }}>
+          <h2>{bookingStatus}</h2>
+        </div>
+      )}
 
       {favs.length === 0 ? (
         <div className="empty-state">

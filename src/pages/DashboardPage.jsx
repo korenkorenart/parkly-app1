@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react'
 import FilterBar from '../components/FilterBar'
 import ParkingCard from '../components/ParkingCard'
+import { createBooking } from '../lib/supabaseClient'
 
 export default function DashboardPage({ data = [], favorites = [], onToggleFavorite, loading }) {
   const [filters, setFilters] = useState({ maxPrice: '', onlyAvailable: false, sort: 'none' })
+  const [bookingStatus, setBookingStatus] = useState(null)
 
   const filtered = useMemo(() => {
     let list = [...data]
@@ -14,12 +16,19 @@ export default function DashboardPage({ data = [], favorites = [], onToggleFavor
     return list
   }, [data, filters])
 
-  const handleBook = (id) => {
-    alert('ההזמנה בוצעה בהצלחה!')
+  const handleBook = async (id) => {
+    try {
+      const userId = localStorage.getItem('parklyUserId') || `demo-user-${Date.now()}`
+      await createBooking(userId, id)
+      setBookingStatus('ההזמנה נוצרה בהצלחה!')
+    } catch (error) {
+      console.error('Dashboard booking failed:', error)
+      setBookingStatus('לא ניתן להזמין כרגע. נסה שוב מאוחר יותר.')
+    }
   }
 
   return (
-    <section className="page-section">
+    <section className="page-section dashboard-page">
       <header className="page-header">
         <div>
           <p className="eyebrow">כאן נמצאות כל החניות</p>
@@ -28,7 +37,30 @@ export default function DashboardPage({ data = [], favorites = [], onToggleFavor
         </div>
       </header>
 
+      <section className="dashboard-banner">
+        <div>
+          <h2>הצעות חניה חמות</h2>
+          <p>גלה את החניות הטובות ביותר בעיר, השווה מחירים ושמור את החניה שמתאימה לך. דף הדאשבורד עכשיו עם מראה גדול ובולט.</p>
+        </div>
+        <div className="dashboard-metrics">
+          <div className="dashboard-stat">
+            <strong>{filtered.length}</strong>
+            <span>חניות זמינות</span>
+          </div>
+          <div className="dashboard-stat">
+            <strong>{favorites.length}</strong>
+            <span>מועדפים שמורים</span>
+          </div>
+        </div>
+      </section>
+
       <FilterBar filters={filters} onChange={setFilters} />
+
+      {bookingStatus && (
+        <div className="empty-state" style={{ borderColor: 'rgba(34, 197, 94, 0.2)', background: 'rgba(34, 197, 94, 0.08)' }}>
+          <h2>{bookingStatus}</h2>
+        </div>
+      )}
 
       {loading ? (
         <div className="empty-state">
