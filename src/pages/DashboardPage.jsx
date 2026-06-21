@@ -3,7 +3,7 @@ import FilterBar from '../components/FilterBar'
 import ParkingCard from '../components/ParkingCard'
 import { createBooking } from '../lib/supabaseClient'
 
-export default function DashboardPage({ data = [], favorites = [], onToggleFavorite, loading }) {
+export default function DashboardPage({ data = [], favorites = [], onToggleFavorite, loading, userId }) {
   const [filters, setFilters] = useState({ maxPrice: '', onlyAvailable: false, sort: 'none' })
   const [bookingStatus, setBookingStatus] = useState(null)
 
@@ -18,7 +18,6 @@ export default function DashboardPage({ data = [], favorites = [], onToggleFavor
 
   const handleBook = async (id) => {
     try {
-      const userId = localStorage.getItem('parklyUserId') || `demo-user-${Date.now()}`
       await createBooking(userId, id)
       setBookingStatus('ההזמנה נוצרה בהצלחה!')
     } catch (error) {
@@ -41,15 +40,23 @@ export default function DashboardPage({ data = [], favorites = [], onToggleFavor
         <div>
           <h2>הצעות חניה חמות</h2>
           <p>גלה את החניות הטובות ביותר בעיר, השווה מחירים ושמור את החניה שמתאימה לך. דף הדאשבורד עכשיו עם מראה גדול ובולט.</p>
+          <div className="banner-actions">
+            <a className="btn primary" href="/map">עבור למפה</a>
+            <a className="btn secondary" href="/favorites">מועדפים</a>
+          </div>
         </div>
         <div className="dashboard-metrics">
           <div className="dashboard-stat">
             <strong>{filtered.length}</strong>
-            <span>חניות זמינות</span>
+            <span>חניות במסך</span>
           </div>
           <div className="dashboard-stat">
             <strong>{favorites.length}</strong>
-            <span>מועדפים שמורים</span>
+            <span>מועדפים</span>
+          </div>
+          <div className="dashboard-stat accent">
+            <strong>{data.filter((spot) => spot.available).length}</strong>
+            <span>חניות פנויות</span>
           </div>
         </div>
       </section>

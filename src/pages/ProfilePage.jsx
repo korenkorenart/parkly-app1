@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { fetchBookings } from '../lib/supabaseClient'
 
-export default function ProfilePage({ data = [], favorites = [] }) {
+export default function ProfilePage({ data = [], favorites = [], user = null, userId }) {
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const userId = localStorage.getItem('parklyUserId')
     if (!userId) return
 
     setLoading(true)
@@ -14,10 +13,10 @@ export default function ProfilePage({ data = [], favorites = [] }) {
       .then((rows) => setBookings(rows))
       .catch((error) => console.error('Error fetching bookings:', error))
       .finally(() => setLoading(false))
-  }, [])
+  }, [userId])
 
   const favoriteSpots = data.filter((spot) => favorites.includes(spot.id))
-  const userId = localStorage.getItem('parklyUserId') || 'Guest'
+  const displayId = user?.id || userId || 'Guest'
 
   return (
     <main className="container page-section">
@@ -35,7 +34,11 @@ export default function ProfilePage({ data = [], favorites = [] }) {
             <span>הזמנות</span>
           </div>
           <div>
-            <strong>{userId}</strong>
+            <strong>{user?.email || 'אורח'}</strong>
+            <span>אימייל</span>
+          </div>
+          <div>
+            <strong>{displayId}</strong>
             <span>מזהה משתמש</span>
           </div>
         </div>
@@ -97,9 +100,9 @@ export default function ProfilePage({ data = [], favorites = [] }) {
               <article key={booking.id} className="parking-card">
                 <h3>הזמנה #{booking.id}</h3>
                 <p className="detail-meta">סטטוס: {booking.status}</p>
-                <p>חניה: {booking.parking_spot_id}</p>
-                <p>מתחילה: {new Date(booking.starts_at).toLocaleString('he-IL')}</p>
-                <p>נגמרת: {new Date(booking.ends_at).toLocaleString('he-IL')}</p>
+                <p>חניה: {booking.parking_spots?.title || booking.parking_spot_id}</p>
+                {booking.starts_at && <p>מתחילה: {new Date(booking.starts_at).toLocaleString('he-IL')}</p>}
+                {booking.ends_at && <p>נגמרת: {new Date(booking.ends_at).toLocaleString('he-IL')}</p>}
               </article>
             ))}
           </div>

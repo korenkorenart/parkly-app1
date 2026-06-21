@@ -1,7 +1,7 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
 
-export default function Navbar({ supabaseConnected }) {
+export default function Navbar({ supabaseConnected, user, onSignOut }) {
   return (
     <nav className="navbar" aria-label="ניווט ראשי באתר">
       <div className="nav-inner container">
@@ -14,7 +14,14 @@ export default function Navbar({ supabaseConnected }) {
           <NavLink to="/profile" className={({ isActive }) => (isActive ? 'active' : '')}>פרופיל</NavLink>
         </div>
         <div className="status-chip" aria-live="polite">
-          {supabaseConnected ? 'מחובר ל‑Supabase' : 'מצב דמו'}
+          {user ? (
+            <>
+              <span>שלום, {user.email}</span>
+              <button type="button" className="btn subtle" onClick={onSignOut}>התנתק</button>
+            </>
+          ) : (
+            <span>{supabaseConnected ? 'לא מחובר' : 'מצב דמו'}</span>
+          )}
         </div>
       </div>
     </nav>

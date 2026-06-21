@@ -2,13 +2,12 @@ import React, { useState } from 'react'
 import ParkingCard from '../components/ParkingCard'
 import { createBooking } from '../lib/supabaseClient'
 
-export default function FavoritesPage({ data = [], favorites = [], onToggleFavorite }) {
+export default function FavoritesPage({ data = [], favorites = [], onToggleFavorite, userId }) {
   const [bookingStatus, setBookingStatus] = useState(null)
   const favs = data.filter((p) => favorites.includes(p.id))
 
   const handleBook = async (id) => {
     try {
-      const userId = localStorage.getItem('parklyUserId') || `demo-user-${Date.now()}`
       await createBooking(userId, id)
       setBookingStatus('ההזמנה נוצרה בהצלחה!')
     } catch (error) {

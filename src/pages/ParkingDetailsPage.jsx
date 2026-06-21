@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { createBooking } from '../lib/supabaseClient'
 
-export default function ParkingDetailsPage({ data = [], onToggleFavorite = () => {}, favorites = [] }) {
+export default function ParkingDetailsPage({ data = [], onToggleFavorite = () => {}, favorites = [], userId }) {
   const [bookingStatus, setBookingStatus] = useState(null)
   const { id } = useParams()
   const spot = data.find((p) => p.id === id)
@@ -12,7 +12,6 @@ export default function ParkingDetailsPage({ data = [], onToggleFavorite = () =>
     if (!spot.available) return
 
     try {
-      const userId = localStorage.getItem('parklyUserId') || `demo-user-${Date.now()}`
       await createBooking(userId, spot.id)
       setBookingStatus('ההזמנה נקלטה בהצלחה!')
     } catch (error) {
@@ -32,6 +31,16 @@ export default function ParkingDetailsPage({ data = [], onToggleFavorite = () =>
         <p>{spot.description}</p>
         <div className="actions">
           <button className="btn secondary" onClick={() => onToggleFavorite(spot.id)}>{favorites.includes(spot.id) ? 'הוסר מהמועדפים' : 'שמור במועדפים'}</button>
+          {spot.lat && spot.lng && (
+            <a
+              className="btn secondary map-link"
+              href={`https://www.openstreetmap.org/?mlat=${spot.lat}&mlon=${spot.lng}#map=14/${spot.lat}/${spot.lng}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              פתח במפה
+            </a>
+          )}
           <button className="btn primary" onClick={handleBook} disabled={!spot.available}>{spot.available ? 'הזמן עכשיו' : 'לא זמין'}</button>
         </div>
         {bookingStatus && <p className="page-description" style={{ marginTop: '14px' }}>{bookingStatus}</p>}

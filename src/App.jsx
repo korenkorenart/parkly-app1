@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
-import { fetchParkingSpots, fetchFavorites, addFavorite, removeFavorite } from './lib/supabaseClient'
+import { Routes, Route, useNavigate } from 'react-router-dom'
+import { fetchParkingSpots, fetchFavorites, addFavorite, removeFavorite, signOut, getSession, onAuthStateChange } from './lib/supabaseClient'
 import parkingData from './data/parkingData'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
@@ -13,6 +13,7 @@ import ParkingDetailsPage from './pages/ParkingDetailsPage'
 import FavoritesPage from './pages/FavoritesPage'
 import ProfilePage from './pages/ProfilePage'
 import TermsPage from './pages/TermsPage'
+import ProtectedRoute from './components/ProtectedRoute'
 
 const hasSupabase = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY)
 
@@ -27,14 +28,46 @@ export default function App() {
   const [data, setData] = useState(parkingData)
   const [supabaseConnected, setSupabaseConnected] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [session, setSession] = useState(null)
+  const [user, setUser] = useState(null)
 
   const userId = useMemo(() => {
+    if (session?.user?.id) return session.user.id
+
     let id = localStorage.getItem('parklyUserId')
     if (!id) {
       id = `demo-user-${Date.now()}`
       localStorage.setItem('parklyUserId', id)
     }
     return id
+  }, [session])
+
+  useEffect(() => {
+    if (!hasSupabase) return
+
+    let active = true
+    getSession()
+      .then((sessionData) => {
+        if (!active || !sessionData) return
+        setSession(sessionData)
+        setUser(sessionData.user)
+      })
+      .catch(() => {})
+
+    const authListener = onAuthStateChange((event, authSession) => {
+      if (!active) return
+      setSession(authSession)
+      setUser(authSession?.user ?? null)
+      if (event === 'SIGNED_OUT') {
+        setFavorites([])
+        localStorage.removeItem('favorites')
+      }
+    })
+
+    return () => {
+      active = false
+      authListener?.data?.subscription?.unsubscribe?.()
+    }
   }, [])
 
   useEffect(() => {
@@ -73,6 +106,27 @@ export default function App() {
     }
   }, [userId])
 
+  const navigate = useNavigate()
+
+  const handleSignOut = async () => {
+    if (!hasSupabase) {
+      setSession(null)
+      setUser(null)
+      navigate('/login')
+      return
+    }
+
+    try {
+      await signOut()
+      setSession(null)
+      setUser(null)
+      setFavorites([])
+      navigate('/login')
+    } catch (error) {
+      console.error('שגיאת יציאה:', error)
+    }
+  }
+
   const toggleFavorite = async (id) => {
     const exists = favorites.includes(id)
     const next = exists ? favorites.filter((i) => i !== id) : [...favorites, id]
@@ -96,17 +150,31 @@ export default function App() {
 
   return (
     <div className="app-root">
-      <Navbar supabaseConnected={supabaseConnected} />
+      <Navbar supabaseConnected={supabaseConnected} user={user} onSignOut={handleSignOut} />
       <main className="container">
         <Routes>
           <Route path="/" element={<HomePage supabaseConnected={supabaseConnected} />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/dashboard" element={<DashboardPage data={data} favorites={favorites} onToggleFavorite={toggleFavorite} loading={loading} />} />
+          <Route path="/login" element={<LoginPage session={session} />} />
+          <Route path="/register" element={<RegisterPage session={session} />} />
+          <Route path="/dashboard" element={<DashboardPage data={data} favorites={favorites} onToggleFavorite={toggleFavorite} loading={loading} userId={userId} />} />
           <Route path="/map" element={<MapPage data={data} />} />
-          <Route path="/parking/:id" element={<ParkingDetailsPage data={data} onToggleFavorite={toggleFavorite} favorites={favorites} />} />
-          <Route path="/favorites" element={<FavoritesPage data={data} favorites={favorites} onToggleFavorite={toggleFavorite} />} />
-          <Route path="/profile" element={<ProfilePage data={data} favorites={favorites} />} />
+          <Route path="/parking/:id" element={<ParkingDetailsPage data={data} onToggleFavorite={toggleFavorite} favorites={favorites} userId={userId} />} />
+          <Route
+            path="/favorites"
+            element={
+              <ProtectedRoute isAuthenticated={!!session || !hasSupabase}>
+                <FavoritesPage data={data} favorites={favorites} onToggleFavorite={toggleFavorite} userId={userId} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute isAuthenticated={!!session || !hasSupabase}>
+                <ProfilePage data={data} favorites={favorites} user={user} userId={userId} />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/terms" element={<TermsPage />} />
         </Routes>
       </main>

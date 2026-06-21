@@ -42,9 +42,44 @@ export async function removeFavorite(userId, parkingSpotId) {
   if (error) throw error
 }
 
+export async function signUp(email, password) {
+  const client = ensureSupabase()
+  const { data, error } = await client.auth.signUp({ email, password })
+  if (error) throw error
+  return data
+}
+
+export async function signIn(email, password) {
+  const client = ensureSupabase()
+  const { data, error } = await client.auth.signInWithPassword({ email, password })
+  if (error) throw error
+  return data
+}
+
+export async function signOut() {
+  const client = ensureSupabase()
+  const { error } = await client.auth.signOut()
+  if (error) throw error
+}
+
+export async function getSession() {
+  const client = ensureSupabase()
+  const { data, error } = await client.auth.getSession()
+  if (error) throw error
+  return data.session
+}
+
+export function onAuthStateChange(callback) {
+  const client = ensureSupabase()
+  return client.auth.onAuthStateChange((event, session) => callback(event, session))
+}
+
 export async function fetchBookings(userId) {
   if (!supabase) return []
-  const { data, error } = await supabase.from('bookings').select('*').eq('user_id', userId)
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*, parking_spots(id, title, location, price)')
+    .eq('user_id', userId)
   if (error) throw error
   return data
 }
