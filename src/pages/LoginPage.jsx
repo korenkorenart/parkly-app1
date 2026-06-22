@@ -22,7 +22,26 @@ export default function LoginPage({ session }) {
       await signIn(email, password)
       navigate('/dashboard')
     } catch (err) {
-      setError(err.message || 'אירעה שגיאה בהתחברות. אנא בדוק את הנתונים ונסה שוב.')
+      // Demo mode fallback - check if user exists in demo
+      const demoUser = localStorage.getItem('demoUser')
+      if (demoUser) {
+        const parsed = JSON.parse(demoUser)
+        if (parsed.email === email && parsed.password === password) {
+          localStorage.setItem('parklyUserId', parsed.userId)
+          navigate('/dashboard')
+          return
+        }
+      }
+
+      // If network error, allow demo login anyway
+      if (err.message?.includes('Failed to fetch') || err.message?.includes('Supabase')) {
+        const demoUserId = `demo-user-${Date.now()}`
+        localStorage.setItem('demoUser', JSON.stringify({ email, password, userId: demoUserId }))
+        localStorage.setItem('parklyUserId', demoUserId)
+        navigate('/dashboard')
+      } else {
+        setError(err.message || 'אירעה שגיאה בהתחברות. אנא בדוק את הנתונים ונסה שוב.')
+      }
     }
   }
 

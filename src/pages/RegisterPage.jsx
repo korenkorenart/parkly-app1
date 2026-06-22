@@ -28,7 +28,17 @@ export default function RegisterPage({ session }) {
         setSuccess('נרשמת בהצלחה! בדוק את הדואר האלקטרוני שלך לאימות.')
       }
     } catch (err) {
-      setError(err.message || 'אירעה שגיאה בהרשמה. אנא נסה שוב.')
+      // Demo mode fallback - allow registration without Supabase
+      if (err.message?.includes('Failed to fetch') || err.message?.includes('Supabase')) {
+        // Save demo user to localStorage
+        const demoUserId = `demo-user-${Date.now()}`
+        localStorage.setItem('demoUser', JSON.stringify({ email, password, userId: demoUserId }))
+        localStorage.setItem('parklyUserId', demoUserId)
+        setSuccess('✅ נרשמת בהצלחה במצב דמו! מעבר לדשבורד...')
+        setTimeout(() => navigate('/dashboard'), 1500)
+      } else {
+        setError(err.message || 'אירעה שגיאה בהרשמה. אנא נסה שוב.')
+      }
     }
   }
 
