@@ -1,6 +1,8 @@
 ﻿import React from 'react'
+import { useNavigate } from 'react-router-dom'
 
 export default function MapPage({ data = [] }) {
+  const navigate = useNavigate()
   const points = data.filter((spot) => spot.lat && spot.lng)
   const available = points.filter((spot) => spot.available).length
   const unavailable = points.length - available
@@ -17,24 +19,24 @@ export default function MapPage({ data = [] }) {
     <main className="container page-section">
       <section className="info-panel" aria-labelledby="map-title">
         <div>
-          <p className="eyebrow">מפה חכמה</p>
-          <h2 id="map-title">מפת חניות</h2>
-          <p>כל החניות שלך במפה אחת עם נקודות מיקום, מצב וזמינות.</p>
+          <p className="eyebrow">מפה אינטראקטיבית</p>
+          <h2 id="map-title">מפת חניות בזמן אמת</h2>
+          <p>גלה חניות קרובות במפה, בדוק זמינות והזמן מיד עם הזמנה מהירה.</p>
         </div>
       </section>
 
       <section className="map-summary-cards">
         <div className="map-stat-card">
           <strong>{points.length}</strong>
-          <span>חניות מסומנות</span>
+          <span>חניות במפה</span>
         </div>
         <div className="map-stat-card available-card">
           <strong>{available}</strong>
-          <span>פנויות</span>
+          <span>פנויות עכשיו</span>
         </div>
         <div className="map-stat-card unavailable-card">
           <strong>{unavailable}</strong>
-          <span>לא זמינות</span>
+          <span>תפוסות</span>
         </div>
       </section>
 
@@ -48,28 +50,37 @@ export default function MapPage({ data = [] }) {
 
         <aside className="map-list" aria-label="רשימת חניות במפה">
           <div className="map-list-header">
-            <h3>חניות ברשימה</h3>
-            <p>לחץ על כל קישור כדי לפתוח את המיקום ב־OpenStreetMap.</p>
+            <h3>חניות קרובות</h3>
+            <p>לחץ על "פתחות" כדי לראות עוד פרטים והזמנה מהירה.</p>
           </div>
           <ul>
             {points.length === 0 ? (
               <li className="map-empty">אין חניות עם מיקום מוגדר להצגה במפה.</li>
             ) : (
               points.map((spot) => (
-                <li key={spot.id}>
-                  <div>
-                    <a
-                      href={`https://www.openstreetmap.org/?mlat=${spot.lat}&mlon=${spot.lng}#map=14/${spot.lat}/${spot.lng}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {spot.title}
-                    </a>
-                    <p className="detail-meta">{spot.location} · ₪{spot.price}</p>
+                <li key={spot.id} className="map-spot-item">
+                  <div className="spot-info">
+                    <h4>{spot.title}</h4>
+                    <p className="detail-meta">{spot.location}</p>
+                    <p className="detail-meta">₪{spot.price}/שעה</p>
+                    <span className={spot.available ? 'badge available' : 'badge unavailable'}>
+                      {spot.available ? '✓ פנוי' : '✗ תפוס'}
+                    </span>
                   </div>
-                  <span className={spot.available ? 'badge available' : 'badge unavailable'}>
-                    {spot.available ? 'פנוי' : 'לא זמין'}
-                  </span>
+                  <div className="spot-actions">
+                    <button
+                      className="btn small secondary"
+                      onClick={() => window.open(`https://www.openstreetmap.org/?mlat=${spot.lat}&mlon=${spot.lng}#map=14/${spot.lat}/${spot.lng}`, '_blank')}
+                    >
+                      📍 מפה
+                    </button>
+                    <button
+                      className="btn small primary"
+                      onClick={() => navigate(`/parking/${spot.id}`)}
+                    >
+                      פתח
+                    </button>
+                  </div>
                 </li>
               ))
             )}

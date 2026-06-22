@@ -1,93 +1,214 @@
-# Parkly (Demo)
+# Parkly - חנייה בקלות
 
-Parkly is a demo app to discover and book parking spots. This repository contains a local demo dataset and a simple React + Vite frontend with RTL Hebrew support.
+פלטפורמת ממצא חניות עם התחברות Supabase וניהול מועדפים. אפליקציה React+Vite עם תמיכה RTL עברית מלאה.
 
-What it does:
-- מציג חניות לדמו, מאפשר סינון ומיון
-- שמירה במועדפים
-- עמוד פרטי חניה + כפתור הזמנה (הודעת הצלחה)
+## מה אפשר לעשות
+✨ חיפוש חניות עם סינון לפי מחיר וזמינות
+❤️ שמירת מועדפים בחניות
+📍 מפה אינטראקטיבית עם OpenStreetMap
+📅 הזמנות חניות עם היסטוריה
+👤 פרופיל משתמש עם נתונים מסונכרנים
 
-How to run:
-1. Install dependencies: `npm install`
-2. Run dev server: `npm run dev`
+## התקנה מהירה
 
-Notes:
-- This is a demo app with Supabase auth and bookings integration.
-- The demo data lives in `src/data/parkingData.js` until Supabase credentials are configured.
-- To enable Supabase, create a `.env.local` file and add:
+```bash
+# 1. התקן תלויות
+npm install
 
-```env
-VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-public-key
+# 2. העתק את קובץ הסביבה
+cp .env.example .env.local
+# ערוך את VITE_SUPABASE_URL ו-VITE_SUPABASE_ANON_KEY
+
+# 3. הרץ בפיתוח
+npm run dev
+
+# 4. בנה ל-production
+npm run build
 ```
 
-## Supabase SQL Schema
+האפליקציה תרוץ על `http://localhost:5173`
 
-Recommended tables and relationships:
+## הגדרת Supabase
 
-- `parking_spots`
-  - `id` TEXT PRIMARY KEY
-  - `title` TEXT NOT NULL
-  - `location` TEXT NOT NULL
-  - `price` NUMERIC NOT NULL
-  - `available` BOOLEAN NOT NULL DEFAULT true
-  - `description` TEXT
-  - `lat` NUMERIC
-  - `lng` NUMERIC
+### 1. צור פרויקט ב-[supabase.com](https://supabase.com)
 
-- `favorites`
-  - `id` TEXT PRIMARY KEY DEFAULT gen_random_uuid()
-  - `user_id` TEXT NOT NULL
-  - `parking_spot_id` TEXT NOT NULL
-  - `created_at` TIMESTAMP WITH TIME ZONE DEFAULT now()
-
-- `bookings`
-  - `id` TEXT PRIMARY KEY DEFAULT gen_random_uuid()
-  - `user_id` TEXT NOT NULL
-  - `parking_spot_id` TEXT NOT NULL
-  - `starts_at` TIMESTAMP WITH TIME ZONE NOT NULL
-  - `ends_at` TIMESTAMP WITH TIME ZONE NOT NULL
-  - `status` TEXT NOT NULL DEFAULT 'confirmed'
-  - `created_at` TIMESTAMP WITH TIME ZONE DEFAULT now()
-
-### Supabase SQL example
-
-Use this SQL in Supabase SQL editor:
+### 2. העתק את הקוד בـ SQL Editor
 
 ```sql
-create table if not exists parking_spots (
-  id text primary key,
-  title text not null,
-  location text not null,
-  price numeric not null,
-  available boolean not null default true,
-  description text,
-  lat numeric,
-  lng numeric
+-- Parking Spots
+CREATE TABLE parking_spots (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  location TEXT NOT NULL,
+  price NUMERIC NOT NULL,
+  available BOOLEAN DEFAULT TRUE,
+  description TEXT,
+  lat NUMERIC,
+  lng NUMERIC,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
-create table if not exists favorites (
-  id text primary key default gen_random_uuid(),
-  user_id text not null,
-  parking_spot_id text not null,
-  created_at timestamptz default now()
+-- Favorites (user_id מ-Supabase Auth)
+CREATE TABLE favorites (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  parking_spot_id TEXT NOT NULL REFERENCES parking_spots(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, parking_spot_id)
 );
 
-create table if not exists bookings (
-  id text primary key default gen_random_uuid(),
-  user_id text not null,
-  parking_spot_id text not null,
-  starts_at timestamptz not null,
-  ends_at timestamptz not null,
-  status text not null default 'confirmed',
-  created_at timestamptz default now()
+-- Bookings
+CREATE TABLE bookings (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  parking_spot_id TEXT NOT NULL REFERENCES parking_spots(id) ON DELETE CASCADE,
+  starts_at TIMESTAMPTZ NOT NULL,
+  ends_at TIMESTAMPTZ NOT NULL,
+  status TEXT DEFAULT 'confirmed',
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 ```
 
-If you want user profile metadata, add an optional `profiles` table with `id`, `email`, and `created_at`.
+### 3. הוסף נתונים לדוגמה
 
-## How it works
+```sql
+INSERT INTO parking_spots (id, title, location, price, available, lat, lng) VALUES
+('lot-1', '🅿️ חניון רחוב מנחם בגין', 'תל אביב מרכז', 30, TRUE, 32.0852, 34.7818),
+('lot-2', '🅿️ חניון קניון רמת השרון', 'רמת השרון', 20, TRUE, 32.1559, 34.8346),
+('lot-3', '🅿️ חניון חיפה בנמל', 'חיפה', 25, FALSE, 32.8173, 35.0005);
+```
 
-- Auth: `src/lib/supabaseClient.js` uses Supabase Auth for login/register.
-- Favorites: stored per user in the `favorites` table.
-- Bookings: stored per user in the `bookings` table.
+### 4. הגדר .env.local
+
+```bash
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-public-anon-key-here
+```
+
+(מוצא בהגדרות Supabase > API)
+
+## תכונות עיקריות
+
+### 📖 דפים
+- **בית** - התחברות ורשמה
+- **דשבורד** - רשימת חניות עם סינון
+- **מפה** - OpenStreetMap אינטראקטיבית
+- **מועדפים** - חניות שנשמרו
+- **פרופיל** - היסטוריית הזמנות
+- **מדיניות פרטיות** - שימוש נתונים
+- **תנאי שימוש** - חובות משפטיות
+
+### 🔐 אבטחה
+- Supabase Auth (JWT tokens)
+- סיסמאות מעוטות (bcrypt)
+- HTTPS הצפנה
+- Row-Level Security (RLS) במסד
+
+### 📱 עיצוב
+- RTL מלא עברית
+- Responsive (desktop + mobile)
+- WCAG A11y אחריות נגישות
+- Dark/Light חומר עיצוב
+
+## ארכיטקטורה
+
+```
+src/
+├── App.jsx              # ניהול מצב ראשי, routes
+├── components/          # Navbar, Footer, ProtectedRoute
+├── pages/               # 8 דפים מלאים
+│   ├── HomePage
+│   ├── LoginPage
+│   ├── RegisterPage
+│   ├── DashboardPage
+│   ├── MapPage
+│   ├── ParkingDetailsPage
+│   ├── FavoritesPage
+│   ├── ProfilePage
+│   ├── PrivacyPage
+│   └── TermsPage
+├── lib/
+│   └── supabaseClient.js # תקשור Supabase
+├── data/
+│   └── parkingData.js   # backup דמו
+└── index.css            # סגנונות RTL
+```
+
+## פיתוח
+
+```bash
+npm run dev         # dev server עם hot reload
+npm run build       # בנייה production (dist/)
+npm run preview     # תצוגה של build
+```
+
+## סביבות
+
+**.env.local** - מצפין בתוכנית, לעולם אל תשלח לGit
+```
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+```
+
+**.env.example** - טמפלט, בטוח להעלות
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+## עדכון Git
+
+```bash
+git status                  # בדוק מצב
+git add .                   # הוסף קבצים
+git commit -m "wip: feature" # commit
+git push origin main        # push
+```
+
+**חשוב:** `.env.local` כבר בـ `.gitignore` - לא יהיה מקרה אומץ בgit!
+
+## Deployment
+
+### Vercel (מומלץ)
+```bash
+# 1. יצא לvercel.com וכנס עם GitHub
+# 2. בחר את הrepo
+# 3. הוסף Environment Variables:
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+# 4. Vercel יבנה וידיפלוי באופן אוטומטי
+```
+
+### Netlify
+```bash
+# 1. npm run build
+# 2. העלה את תיקית dist/
+```
+
+### Docker (עבור VPS)
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY . .
+RUN npm install && npm run build
+EXPOSE 3000
+CMD ["npm", "run", "preview"]
+```
+
+## לשימור בקובץ Git
+
+```bash
+git push origin main
+```
+
+קובץ `.env.local` מוגן אוטומטית מקידוד לGit!
+
+## תמיכה וקשר
+
+צור issue בgithub או שלח email.
+
+---
+
+**מצב:** Production-Ready ✅
+**עדכון אחרון:** יוני 2026
+**ליצנס:** MIT

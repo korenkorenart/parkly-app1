@@ -13,6 +13,7 @@ import ParkingDetailsPage from './pages/ParkingDetailsPage'
 import FavoritesPage from './pages/FavoritesPage'
 import ProfilePage from './pages/ProfilePage'
 import TermsPage from './pages/TermsPage'
+import PrivacyPage from './pages/PrivacyPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 const hasSupabase = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY)
@@ -176,6 +177,7 @@ export default function App() {
             }
           />
           <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
         </Routes>
       </main>
       <Footer />

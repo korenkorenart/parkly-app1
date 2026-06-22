@@ -38,25 +38,25 @@ export default function DashboardPage({ data = [], favorites = [], onToggleFavor
 
       <section className="dashboard-banner">
         <div>
-          <h2>הצעות חניה חמות</h2>
-          <p>גלה את החניות הטובות ביותר בעיר, השווה מחירים ושמור את החניה שמתאימה לך. דף הדאשבורד עכשיו עם מראה גדול ובולט.</p>
+          <h2>🚗 חניות זמינות בסביבה</h2>
+          <p>חפש חניה שמתאימה לך, השווה מחירים ודירוגים, שמור למועדפים והזמן בשניות.</p>
           <div className="banner-actions">
-            <a className="btn primary" href="/map">עבור למפה</a>
-            <a className="btn secondary" href="/favorites">מועדפים</a>
+            <a className="btn primary" href="/map">📍 צפה במפה</a>
+            <a className="btn secondary" href="/favorites">❤️ מועדפים שלי</a>
           </div>
         </div>
         <div className="dashboard-metrics">
           <div className="dashboard-stat">
             <strong>{filtered.length}</strong>
-            <span>חניות במסך</span>
+            <span>חניות זמינות</span>
           </div>
           <div className="dashboard-stat">
             <strong>{favorites.length}</strong>
-            <span>מועדפים</span>
+            <span>שמור כמועדף</span>
           </div>
           <div className="dashboard-stat accent">
             <strong>{data.filter((spot) => spot.available).length}</strong>
-            <span>חניות פנויות</span>
+            <span>פנויות עכשיו</span>
           </div>
         </div>
       </section>
