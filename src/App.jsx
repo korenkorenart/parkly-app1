@@ -1,7 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
-import { fetchParkingSpots, fetchFavorites, addFavorite, removeFavorite, signOut, getSession, onAuthStateChange } from './lib/supabaseClient'
-import parkingData from './data/parkingData'
+import {
+  fetchParkingSpots,
+  fetchFavorites,
+  addFavorite,
+  removeFavorite,
+  signOut,
+  getSession,
+  onAuthStateChange,
+} from './lib/supabaseClient'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import HomePage from './pages/HomePage'
@@ -15,10 +22,16 @@ import ProfilePage from './pages/ProfilePage'
 import TermsPage from './pages/TermsPage'
 import PrivacyPage from './pages/PrivacyPage'
 import ProtectedRoute from './components/ProtectedRoute'
+import PaymentPage from './pages/PaymentPage'
+import CartPage from './pages/CartPage'
 
-const hasSupabase = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY)
+const hasSupabase = Boolean(
+  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY
+)
 
 export default function App() {
+  const navigate = useNavigate()
+
   const [favorites, setFavorites] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('favorites')) || []
@@ -26,11 +39,31 @@ export default function App() {
       return []
     }
   })
-  const [data, setData] = useState(parkingData)
+
+  const [data, setData] = useState([])
   const [supabaseConnected, setSupabaseConnected] = useState(false)
   const [loading, setLoading] = useState(false)
   const [session, setSession] = useState(null)
   const [user, setUser] = useState(null)
+  const [toast, setToast] = useState({ type: '', text: '' })
+
+  const showToast = (type, text) => {
+    setToast({ type, text })
+    window.setTimeout(() => setToast({ type: '', text: '' }), 3200)
+  }
+
+  useEffect(() => {
+    const handleGlobalToast = (event) => {
+      const { type = 'success', text = '' } = event.detail || {}
+      if (text) showToast(type, text)
+    }
+
+    window.addEventListener('parkly-toast', handleGlobalToast)
+
+    return () => {
+      window.removeEventListener('parkly-toast', handleGlobalToast)
+    }
+  }, [])
 
   const userId = useMemo(() => {
     if (session?.user?.id) return session.user.id
@@ -40,6 +73,7 @@ export default function App() {
       id = `demo-user-${Date.now()}`
       localStorage.setItem('parklyUserId', id)
     }
+
     return id
   }, [session])
 
@@ -47,6 +81,7 @@ export default function App() {
     if (!hasSupabase) return
 
     let active = true
+
     getSession()
       .then((sessionData) => {
         if (!active || !sessionData) return
@@ -57,11 +92,14 @@ export default function App() {
 
     const authListener = onAuthStateChange((event, authSession) => {
       if (!active) return
+
       setSession(authSession)
       setUser(authSession?.user ?? null)
+
       if (event === 'SIGNED_OUT') {
         setFavorites([])
         localStorage.removeItem('favorites')
+        showToast('success', 'התנתקת מהמערכת בהצלחה')
       }
     })
 
@@ -86,6 +124,7 @@ export default function App() {
       })
       .catch(() => {
         setSupabaseConnected(false)
+        showToast('error', 'לא ניתן לטעון חניות מ־Supabase כרגע')
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -98,22 +137,19 @@ export default function App() {
           localStorage.setItem('favorites', JSON.stringify(ids))
         }
       })
-      .catch(() => {
-        /* fallback to local favorites */
-      })
+      .catch(() => {})
 
     return () => {
       active = false
     }
   }, [userId])
 
-  const navigate = useNavigate()
-
   const handleSignOut = async () => {
     if (!hasSupabase) {
       setSession(null)
       setUser(null)
       navigate('/login')
+      showToast('success', 'התנתקת מהמערכת')
       return
     }
 
@@ -125,49 +161,96 @@ export default function App() {
       navigate('/login')
     } catch (error) {
       console.error('שגיאת יציאה:', error)
+      showToast('error', 'לא ניתן להתנתק כרגע')
     }
   }
 
   const toggleFavorite = async (id) => {
     const exists = favorites.includes(id)
     const next = exists ? favorites.filter((i) => i !== id) : [...favorites, id]
+
     setFavorites(next)
     localStorage.setItem('favorites', JSON.stringify(next))
 
-    if (!hasSupabase) return
+    if (!hasSupabase) {
+      showToast('success', exists ? 'החניה הוסרה מהמועדפים' : 'החניה נשמרה במועדפים')
+      return
+    }
 
     try {
       if (exists) {
         await removeFavorite(userId, id)
+        showToast('success', 'החניה הוסרה מהמועדפים')
       } else {
         await addFavorite(userId, id)
+        showToast('success', 'החניה נשמרה במועדפים')
       }
     } catch (error) {
       setFavorites(favorites)
       localStorage.setItem('favorites', JSON.stringify(favorites))
       console.error('שגיאת שמירת מועדפים:', error)
+      showToast('error', 'לא ניתן לעדכן מועדפים כרגע')
     }
   }
 
   return (
     <div className="app-root">
       <Navbar supabaseConnected={supabaseConnected} user={user} onSignOut={handleSignOut} />
+
+      {toast.text && (
+        <div className={`toast ${toast.type}`} role="status" aria-live="polite">
+          <span>{toast.type === 'error' ? '⚠️' : '✅'}</span>
+          <strong>{toast.text}</strong>
+        </div>
+      )}
+
       <main className="container">
         <Routes>
           <Route path="/" element={<HomePage supabaseConnected={supabaseConnected} />} />
           <Route path="/login" element={<LoginPage session={session} />} />
           <Route path="/register" element={<RegisterPage session={session} />} />
-          <Route path="/dashboard" element={<DashboardPage data={data} favorites={favorites} onToggleFavorite={toggleFavorite} loading={loading} userId={userId} />} />
+
+          <Route
+            path="/dashboard"
+            element={
+              <DashboardPage
+                data={data}
+                favorites={favorites}
+                onToggleFavorite={toggleFavorite}
+                loading={loading}
+                userId={userId}
+              />
+            }
+          />
+
           <Route path="/map" element={<MapPage data={data} />} />
-          <Route path="/parking/:id" element={<ParkingDetailsPage data={data} onToggleFavorite={toggleFavorite} favorites={favorites} userId={userId} />} />
+
+          <Route
+            path="/parking/:id"
+            element={
+              <ParkingDetailsPage
+                data={data}
+                onToggleFavorite={toggleFavorite}
+                favorites={favorites}
+                userId={userId}
+              />
+            }
+          />
+
           <Route
             path="/favorites"
             element={
               <ProtectedRoute isAuthenticated={!!session || !hasSupabase}>
-                <FavoritesPage data={data} favorites={favorites} onToggleFavorite={toggleFavorite} userId={userId} />
+                <FavoritesPage
+                  data={data}
+                  favorites={favorites}
+                  onToggleFavorite={toggleFavorite}
+                  userId={userId}
+                />
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/profile"
             element={
@@ -176,10 +259,30 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/payment"
+            element={
+              <ProtectedRoute isAuthenticated={!!session || !hasSupabase}>
+                <PaymentPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cart"
+            element={
+              <ProtectedRoute isAuthenticated={!!session || !hasSupabase}>
+                <CartPage />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
         </Routes>
       </main>
+
       <Footer />
     </div>
   )
